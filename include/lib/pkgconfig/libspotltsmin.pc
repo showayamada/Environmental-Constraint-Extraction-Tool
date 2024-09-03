@@ -1,0 +1,12 @@
+prefix=/Users/s-yamada/rse/include
+exec_prefix=/Users/s-yamada/rse/include
+includedir=/Users/s-yamada/rse/include/include
+libdir=/Users/s-yamada/rse/include/lib
+
+Name: Spot-LTSmin
+Description: Access to LTSmin-compatible state-space in Spot
+URL: https://spot.lrde.epita.fr/
+Version: 2.12
+Cflags: -I${includedir}
+Libs: -L${libdir} -lspotltsmin
+Requires: libspot
