@@ -159,7 +159,7 @@ int main ()
             bdd0 = bdd_and(bdd0, bdd1);
         }
     }
-    cout << "最後の答え : " << bdd0 << endl; // not x2
+    cout << "最後の答え : " << bdd0 << endl;
 
     return 0;
 }
