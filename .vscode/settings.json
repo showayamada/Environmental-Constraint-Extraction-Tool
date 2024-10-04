@@ -4,6 +4,24 @@
         "__locale": "cpp",
         "format": "cpp",
         "iostream": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "__node_handle": "cpp",
+        "__tree": "cpp",
+        "array": "cpp",
+        "iterator": "cpp",
+        "memory_resource": "cpp",
+        "string": "cpp",
+        "initializer_list": "cpp",
+        "iosfwd": "cpp",
+        "limits": "cpp",
+        "list": "cpp",
+        "new": "cpp",
+        "optional": "cpp",
+        "ratio": "cpp",
+        "set": "cpp",
+        "tuple": "cpp",
+        "typeinfo": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp"
     }
 }
