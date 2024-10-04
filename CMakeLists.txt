@@ -19,5 +19,4 @@ add_executable(rse src/main.cpp)
 
 # Spotのライブラリをリンク
 target_link_libraries(rse spot)
-
 target_link_libraries(rse bddx)
