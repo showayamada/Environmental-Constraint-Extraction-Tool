@@ -41,6 +41,8 @@
 using namespace std;
 using namespace spot;
 
+
+
 void load_env()
 {
     ifstream env("../.env");
@@ -77,14 +79,15 @@ int main ()
     // LTL式 => Buchiオートマトン 変換
     translator translator;
     twa_graph_ptr automaton = translator.run(formula);
-    cout << "Buchi オートマトン : " << endl;
-    print_dot(cout, automaton);
+    // cout << "Buchi オートマトン : " << endl;
+    // print_dot(cout, automaton);
 
     // STEP 1: 命題変数を要求イベントxだけに制限
     auto dict = automaton->get_dict();
     auto new_automaton = make_twa_graph(dict);
 
-    dict->dump(cout); // ここで命題変数の情報を取得できる;
+    // 命題変数の情報を取得
+    // dict->dump(cout);
     int y_BDD_index = dict->var_map[response_parsed.f]; // yに対応するbdd変数を取得
     for (auto& t: automaton->edges()) {
         auto& cond = t.cond;
@@ -97,11 +100,11 @@ int main ()
         // cout << "dst : " << dst << endl;
         // cout << "src : " << src << endl;
     }
-    print_dot(cout, automaton);
+    // print_dot(cout, automaton);
 
     automaton->prop_universal(false);
-    cout << "HOAフォーマットにしたオートマトン : " << endl;
-    print_hoa(cout, automaton);
+    // cout << "HOAフォーマットにしたオートマトン : " << endl;
+    // print_hoa(cout, automaton);
     // hoa形式をファイルに出力する
     ofstream ofs("automaton.hoa");
     print_hoa(ofs, automaton);
@@ -116,50 +119,63 @@ int main ()
     simplifiedFile.close();
     string cmd = goal_path + " batch " + src_dir + "/script.sh";
     system(cmd.c_str());
-    cout << "" << endl;
-    cout << "補オートマトン : " << endl;
+    // cout << "" << endl;
+    // cout << "補オートマトン : " << endl;
     const char* filename = "simplified.hoa";
     ifstream hoa_file(filename);
     spot::bdd_dict_ptr d = make_bdd_dict();
     auto complemented = parse_aut(filename, d);
-    print_dot(cout, complemented->aut);
+    //print_dot(cout, complemented->aut);
 
     // STEP 3: 極大強連結成分(SCC)の探索
-    cout << "SCCたち : " << endl;
     scc_info info(complemented->aut);
-    cout << "すべてのscc::" << info.scc_count() << endl;
-    cout << "受理状態を含むsccの数::" << info.one_accepting_scc() << endl;
-    auto marks = info.marks();
-    for (size_t i = 0; i < marks.size(); i++) {
-        for (auto mark : marks[i]) {
-            cout << "sccのindexとmark " << i << " : " << mark.as_string() << endl;
-        }
-    }
+    // デバッグ用
+    // cout << "すべてのscc::" << info.scc_count() << endl;
+    // cout << "受理状態を含むsccの数::" << info.one_accepting_scc() << endl;
+    // auto marks = info.marks();
+    // for (size_t i = 0; i < marks.size(); i++) {
+    //     for (auto mark : marks[i]) {
+    //         cout << "sccのindexとmark " << i << " : " << mark.as_string() << endl;
+    //     }
+    // }
     // 命題変数の情報を取得
-    cout << "命題変数の情報" << endl;  
-    complemented->aut->get_dict()->dump(cout);
+    // cout << "命題変数の情報" << endl;  
+    // complemented->aut->get_dict()->dump(cout);
 
     // STEP 4: 要求イベント制約式の導出
     auto bddT = bddtrue;
     auto bdd0 = bdd(bddT);
     auto bdd1 = bdd(bddT);
     auto bdd2 = bdd(bddT);
+
+    vector<string> formula_list;
     for (auto scc : info) {
         if (scc.is_accepting()) { //受理状態を含むSCCを取得
-            cout << "受理状態を含む極大強連結成分 ";
+            // cout << "受理状態を含む極大強連結成分 ";
             for (auto state : scc.states()) {
-                cout << "状態：" << state << " " << endl;
+                // cout << "状態：" << state << " " << endl;
                 for (auto edge : complemented->aut->out(state)) {
-                    cout << "遷移：" << edge.cond << " " << endl;
+                    // cout << "遷移：" << edge.cond << " " << endl;
                     auto n = bdd_not(edge.cond);
                     bdd2 = bdd_and(bdd2, n);
                 }
                 bdd1 = bdd_and(bdd1, bdd2);
             }
-            bdd0 = bdd_and(bdd0, bdd1);
+            formula_list.push_back("G F " + bdd_format_formula(complemented->aut->get_dict(), bdd1));
+            // bdd_print_formula(cout, complemented->aut->get_dict(), bdd1);
         }
     }
-    cout << "最後の答え : " << bdd0 << endl;
+    string result = "";
+    for (size_t i = 0; i < formula_list.size(); i++) {
+        result += formula_list[i];
+        if (i != formula_list.size() - 1) {
+            result += " && ";
+        }
+    }
+    parsed_formula result_parsed = parse_infix_psl(result);
+    tl_simplifier simplifier;
+    auto result_formula = simplifier.simplify(result_parsed.f);
+    cout << "result : " << str_psl(result_parsed.f) << endl;
 
     return 0;
 }
