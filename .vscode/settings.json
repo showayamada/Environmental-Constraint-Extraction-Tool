@@ -1,9 +1,14 @@
 {
     "files.associations": {
+        "*.embeddedhtml": "html",
         "*.ejs": "html",
         "__locale": "cpp",
         "format": "cpp",
         "iostream": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "chrono": "cpp",
+        "functional": "cpp",
+        "type_traits": "cpp",
+        "variant": "cpp"
     }
 }
