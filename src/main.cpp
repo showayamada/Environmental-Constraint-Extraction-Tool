@@ -69,12 +69,14 @@ int main ()
 
     // LTL式の入力
     string ltl_formula_str = "G((x1 -> F(y)) & (x2 -> !y))";
-    string response = "y";
+    vector<string> responseEvents = {"y"};
     parsed_formula parsed = parse_infix_psl(ltl_formula_str);
-    parsed_formula response_parsed = parse_infix_psl(response);
     formula formula = parsed.f;
     cout << "入力 LTL : " << str_psl(formula) << endl;
-    cout << "応答イベント : " << str_psl(response_parsed.f) << endl;
+    cout << "応答イベント : ";
+    for (auto res: responseEvents) {
+        cout << res << endl;
+    }
 
     // LTL式 => Buchiオートマトン 変換
     translator translator;
@@ -82,23 +84,26 @@ int main ()
     // cout << "Buchi オートマトン : " << endl;
     // print_dot(cout, automaton);
 
-    // STEP 1: 命題変数を要求イベントxだけに制限
+    // 命題変数を要求イベントだけに制限
     auto dict = automaton->get_dict();
     auto new_automaton = make_twa_graph(dict);
 
     // 命題変数の情報を取得
     // dict->dump(cout);
-    int y_BDD_index = dict->var_map[response_parsed.f]; // yに対応するbdd変数を取得
-    for (auto& t: automaton->edges()) {
-        auto& cond = t.cond;
-        auto dst = t.dst;
-        auto src = t.src;
-        bdd y = bdd_ithvar(y_BDD_index);
-        cond = bdd_exist(cond, y);
-        // デバッグ用
-        // cout << "cond : " << cond << endl;
-        // cout << "dst : " << dst << endl;
-        // cout << "src : " << src << endl;
+    for (string res: responseEvents) {
+        parsed_formula responseEvents_parsed = parse_infix_psl(res);
+        int res_BDD_index = dict->var_map[responseEvents_parsed.f];
+        for (auto& t: automaton->edges()) {
+            auto& cond = t.cond;
+            auto dst = t.dst;
+            auto src = t.src;
+            bdd resBDD = bdd_ithvar(res_BDD_index);
+            cond = bdd_exist(cond, resBDD);
+            // デバッグ用
+            // cout << "cond : " << cond << endl;
+            // cout << "dst : " << dst << endl;
+            // cout << "src : " << src << endl;
+        }
     }
     // print_dot(cout, automaton);
 
@@ -127,7 +132,7 @@ int main ()
     auto complemented = parse_aut(filename, d);
     //print_dot(cout, complemented->aut);
 
-    // STEP 3: 極大強連結成分(SCC)の探索
+    // 極大強連結成分(SCC)の探索
     scc_info info(complemented->aut);
     // デバッグ用
     // cout << "すべてのscc::" << info.scc_count() << endl;
@@ -142,40 +147,59 @@ int main ()
     // cout << "命題変数の情報" << endl;  
     // complemented->aut->get_dict()->dump(cout);
 
-    // STEP 4: 要求イベント制約式の導出
+    // 要求イベント制約式の導出
     auto bddT = bddtrue;
     auto bdd0 = bdd(bddT);
     auto bdd1 = bdd(bddT);
     auto bdd2 = bdd(bddT);
 
-    vector<string> formula_list;
+    vector<bdd> formula_list;
     for (auto scc : info) {
+        // cout << "極大強連結成分 : " << endl;
         if (scc.is_accepting()) { //受理状態を含むSCCを取得
-            // cout << "受理状態を含む極大強連結成分 ";
             for (auto state : scc.states()) {
                 // cout << "状態：" << state << " " << endl;
                 for (auto edge : complemented->aut->out(state)) {
-                    // cout << "遷移：" << edge.cond << " " << endl;
-                    auto n = bdd_not(edge.cond);
-                    bdd2 = bdd_and(bdd2, n);
+                    // cout << "遷移：" << edge.src  << " " << edge.cond << " " << edge.dst << endl;
+                    if (find(scc.states().begin(), scc.states().end(), edge.dst) != scc.states().end()) {
+                        auto n = bdd_not(edge.cond);
+                        bdd2 = bdd_and(bdd2, n);
+                    }
                 }
                 bdd1 = bdd_and(bdd1, bdd2);
             }
-            formula_list.push_back("G F " + bdd_format_formula(complemented->aut->get_dict(), bdd1));
+            formula_list.push_back(bdd1);
             // bdd_print_formula(cout, complemented->aut->get_dict(), bdd1);
         }
     }
-    string result = "";
+
+    // 含意関係で条件の緩いものを排除
+    vector<bdd> result_list = {formula_list[0]};
     for (size_t i = 0; i < formula_list.size(); i++) {
-        result += formula_list[i];
-        if (i != formula_list.size() - 1) {
-            result += " && ";
+        bool keep = true;
+        for (size_t j = 0; j < formula_list.size(); j++) {
+            if ((i != j) && (bddtrue == bdd_imp(formula_list[j], formula_list[i]))) {
+                keep = false;
+                break;
+            }
+        }
+        if (keep) {
+            result_list.push_back(formula_list[i]);
         }
     }
-    parsed_formula result_parsed = parse_infix_psl(result);
+
+    cout << "要求イベント制約式 : ";
+    string result_formula = "";
+    for (size_t i = 0; i < result_list.size(); i++) {
+        result_formula += "G F " + bdd_format_formula(complemented->aut->get_dict(), result_list[i]);
+        if (i != formula_list.size() - 1) {
+            result_formula += " && ";
+        }
+    }
+    parsed_formula result_parsed = parse_infix_psl(result_formula);
     tl_simplifier simplifier;
-    auto result_formula = simplifier.simplify(result_parsed.f);
-    cout << "result : " << str_psl(result_parsed.f) << endl;
+    //auto simplified = simplifier.simplify(result_parsed.f);
+    cout << str_psl(result_parsed.f) << endl;
 
     return 0;
 }
