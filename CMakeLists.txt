@@ -11,11 +11,11 @@ set(CMAKE_CXX_COMPILER "g++")
 set(CMAKE_CXX_FLAGS "-pthread")
 
 # Spotのインクルードパスとライブラリパスを指定
-include_directories("${CMAKE_SOURCE_DIR}/include/include")
-link_directories("${CMAKE_SOURCE_DIR}/include/lib")
+include_directories("/root/usr/include")
+link_directories("/root/usr/lib")
 
 # ソースファイルの指定
-add_executable(rse src/main.cpp)
+add_executable(rse /root/rse/src/main.cpp)
 
 # Spotのライブラリをリンク
 target_link_libraries(rse spot)
