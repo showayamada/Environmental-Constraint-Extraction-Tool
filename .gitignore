@@ -1,6 +1,6 @@
 build/*
 .env
 .DS_Store
-include/
+include/*
 goal/*
 !goal/GOAL-20200506-with-API.zip
