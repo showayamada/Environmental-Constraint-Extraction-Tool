@@ -10,13 +10,19 @@ tasks:
     cmd: task -l
 
   build:
-    desc: build the project
+    desc: Build the project
     cmds: 
       - cp .env.example .env
       - docker compose build
       - docker compose run -it --rm cmake bash -c "cd /root/rse/goal && unzip -o GOAL-20200506-with-API.zip"
   
   run:
-    desc: run the project
+    desc: "Run the project. The first parameter is the LTL formula, and the second and subsequent parameters are response events."
     cmds: 
-      - docker compose run -it --rm cmake bash -c "cd /root/rse/build && cmake .. && make && ./rse"
+      - docker compose run -it --rm cmake bash -c "cd /root/rse/build && cmake .. && make && ./rse {{.CLI_ARGS}}"
+
+  clean:
+    desc: delete build directory
+    cmds:
+      - docker compose run -it --rm cmake bash -c "find /root/rse/build -type f | xargs rm -f && rm -rf /root/rse/build/CMakeFiles && touch /root/rse/build/.gitkeep"
+      - echo 'cleaned'

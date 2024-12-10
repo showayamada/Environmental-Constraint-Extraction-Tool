@@ -65,15 +65,21 @@ void load_env()
     env.close();
 }
 
-int main ()
+int main (int argc, char *argv[])
 {
     load_env();
     string src_dir = getenv("PROJECT_SRC_PATH");
     string goal_path = getenv("GOAL_PATH");
 
     // LTL式の入力
-    string ltl_formula_str = "G((x1 -> F(y)) & (x2 -> !y))";
-    vector<string> responseEvents = {"y"};
+    string ltl_formula_str = argv[1];
+    vector<string> responseEvents;
+    for (int i = 2; i < argc; i++) {
+        responseEvents.push_back(argv[i]);
+    }
+    // example
+    // string ltl_formula_str = "G((x1 -> F(y)) & (x2 -> !y))";
+    // vector<string> responseEvents = {"y"};
     parsed_formula parsed = parse_infix_psl(ltl_formula_str);
     formula formula = parsed.f;
     cout << "入力 LTL : " << str_psl(formula) << endl;
