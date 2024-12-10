@@ -42,7 +42,11 @@ using namespace std;
 using namespace spot;
 
 
-
+/**
+ * @fn load_env
+ * @brief .envファイルを読み込む
+ * @return void
+ */
 void load_env()
 {
     ifstream env("../.env");

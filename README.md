@@ -2,21 +2,15 @@
 
 ## Installation
 
+You need to install go-task.  
+go-task[https://taskfile.dev/installation/]
+
 ```
-git clone this-repository
-
-cp .env.example .env
-
-docker compose up -d --build
-
-sudo docker compose exec cmake cd /root/rse/goal && unzip GOAL-20200506-with-API.zip
-
+task build
 ```
 
 ## Usage
 
 ```
-docker compose up -d
-
-docker compose exec cmake cd /root/rse/build && cmake .. && make && ./rse
+task run
 ```
