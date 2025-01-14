@@ -136,12 +136,14 @@ int main (int argc, char *argv[])
     chrono::system_clock::time_point injection_end = chrono::system_clock::now();
 
     automaton->prop_universal(false);
-    // cout << "HOAフォーマットにしたオートマトン : " << endl;
-    // print_hoa(cout, automaton);
-    // hoa形式をファイルに出力する
+
+    // ファイルに出力する
     ofstream ofs("automaton.hoa");
     print_hoa(ofs, automaton);
     ofs.close();
+    ofstream dotfile("automaton.dot");
+    print_dot(dotfile, automaton);
+    dotfile.close();
 
     chrono::system_clock::time_point goal_start = chrono::system_clock::now();
     // cliからgoalを使う
@@ -231,15 +233,12 @@ int main (int argc, char *argv[])
     cout << "要求イベント制約式 : ";
     string result_formula = "";
     for (size_t i = 0; i < result_list.size(); i++) {
-        result_formula += "G F " + bdd_format_formula(complemented->aut->get_dict(), result_list[i]);
+        cout <<"GF("<< bdd_format_formula(complemented->aut->get_dict(), result_list[i])<<")" << endl;
         if (i != formula_list.size() - 1) {
-            result_formula += " && ";
+            cout << " && " << endl;
         }
+        
     }
-    parsed_formula result_parsed = parse_infix_psl(result_formula);
-    tl_simplifier simplifier;
-    //auto simplified = simplifier.simplify(result_parsed.f);
-    cout << str_psl(result_parsed.f) << endl;
 
     chrono::system_clock::time_point exclude_end = chrono::system_clock::now();
 

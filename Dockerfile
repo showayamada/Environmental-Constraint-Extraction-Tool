@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y && \
     apt-get install -y git && \
     apt-get install -y wget && \
     apt-get install -y unzip && \
+    apt-get install -y graphviz && \
     apt-get install -y libssl-dev && \
     apt-get install -y gcc && \
     apt-get install -y g++

@@ -31,3 +31,8 @@ tasks:
     desc: change the complement algorithm (default modifiedsafra)
     cmds:
       - docker compose run -it --rm cmake bash -c "cd /root/rse/src && sed -i 's/complement -m [a-zA-Z0-9_-]*/complement -m {{.CLI_ARGS}}/' script.sh"
+
+  dot2png:
+    desc: convert dot file to png
+    cmds:
+      - docker compose run -it --rm cmake bash -c "cd /root/rse/build && dot -Tpng -o automaton.png automaton.dot"
