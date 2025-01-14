@@ -37,6 +37,7 @@
 #include <spot/tl/defaultenv.hh>
 #include <spot/tl/environment.hh>
 #include <spot/twaalgos/sccinfo.hh>
+#include <chrono>
 
 using namespace std;
 using namespace spot;
@@ -67,15 +68,27 @@ void load_env()
 
 int main (int argc, char *argv[])
 {
+    chrono::system_clock::time_point start, end;
+    start = chrono::system_clock::now();
+
+    chrono::system_clock::time_point load_env_start = chrono::system_clock::now();
     load_env();
     string src_dir = getenv("PROJECT_SRC_PATH");
     string goal_path = getenv("GOAL_PATH");
+    chrono::system_clock::time_point load_env_end = chrono::system_clock::now();
 
+    chrono::system_clock::time_point ltl_input_start = chrono::system_clock::now();
     // LTL式の入力
-    string ltl_formula_str = argv[1];
+    string ltl_formula_str;
     vector<string> responseEvents;
-    for (int i = 2; i < argc; i++) {
-        responseEvents.push_back(argv[i]);
+    if (1 == argc) {
+        ltl_formula_str = "((G(open -> F ! open)) &&(G (close -> F ! close)) &&(G (openext -> F ! openext))) ->((G (open -> F door)) &&(G (close -> ! door)) &&(G((openext && door) -> ((door U close) || (G door)))) &&((F G ! open) -> (F G !door)))";
+        responseEvents = {"door"};
+    } else {
+        ltl_formula_str = argv[1];
+        for (int i = 2; i < argc; i++) {
+            responseEvents.push_back(argv[i]);
+        }
     }
     // example
     // string ltl_formula_str = "G((x1 -> F(y)) & (x2 -> !y))";
@@ -87,13 +100,17 @@ int main (int argc, char *argv[])
     for (auto res: responseEvents) {
         cout << res << endl;
     }
+    chrono::system_clock::time_point ltl_input_end = chrono::system_clock::now();
 
+    chrono::system_clock::time_point to_aut_start = chrono::system_clock::now();
     // LTL式 => Buchiオートマトン 変換
     translator translator;
     twa_graph_ptr automaton = translator.run(formula);
     // cout << "Buchi オートマトン : " << endl;
     // print_dot(cout, automaton);
+    chrono::system_clock::time_point to_aut_end = chrono::system_clock::now();
 
+    chrono::system_clock::time_point injection_start = chrono::system_clock::now();
     // 命題変数を要求イベントだけに制限
     auto dict = automaton->get_dict();
     auto new_automaton = make_twa_graph(dict);
@@ -116,6 +133,7 @@ int main (int argc, char *argv[])
         }
     }
     // print_dot(cout, automaton);
+    chrono::system_clock::time_point injection_end = chrono::system_clock::now();
 
     automaton->prop_universal(false);
     // cout << "HOAフォーマットにしたオートマトン : " << endl;
@@ -125,6 +143,7 @@ int main (int argc, char *argv[])
     print_hoa(ofs, automaton);
     ofs.close();
 
+    chrono::system_clock::time_point goal_start = chrono::system_clock::now();
     // cliからgoalを使う
     ofstream convertedFile("convertedAutomaton.hoa");
     ofstream complementedFile("complemented.hoa");
@@ -141,9 +160,13 @@ int main (int argc, char *argv[])
     spot::bdd_dict_ptr d = make_bdd_dict();
     auto complemented = parse_aut(filename, d);
     //print_dot(cout, complemented->aut);
+    chrono::system_clock::time_point goal_end = chrono::system_clock::now();
 
-    // 極大強連結成分(SCC)の探索
+    chrono::system_clock::time_point mscc_start = chrono::system_clock::now();
+
+    // 極大強連結成分(MSCC)の探索
     scc_info info(complemented->aut);
+
     // デバッグ用
     // cout << "すべてのscc::" << info.scc_count() << endl;
     // cout << "受理状態を含むsccの数::" << info.one_accepting_scc() << endl;
@@ -156,6 +179,10 @@ int main (int argc, char *argv[])
     // 命題変数の情報を取得
     // cout << "命題変数の情報" << endl;  
     // complemented->aut->get_dict()->dump(cout);
+
+    chrono::system_clock::time_point mscc_end = chrono::system_clock::now();
+
+    chrono::system_clock::time_point output_start = chrono::system_clock::now();
 
     // 要求イベント制約式の導出
     auto bddT = bddtrue;
@@ -182,6 +209,9 @@ int main (int argc, char *argv[])
             // bdd_print_formula(cout, complemented->aut->get_dict(), bdd1);
         }
     }
+    chrono::system_clock::time_point output_end = chrono::system_clock::now();
+
+    chrono::system_clock::time_point exclude_start = chrono::system_clock::now();
 
     // 含意関係で条件の緩いものを排除
     vector<bdd> result_list = {formula_list[0]};
@@ -210,6 +240,37 @@ int main (int argc, char *argv[])
     tl_simplifier simplifier;
     //auto simplified = simplifier.simplify(result_parsed.f);
     cout << str_psl(result_parsed.f) << endl;
+
+    chrono::system_clock::time_point exclude_end = chrono::system_clock::now();
+
+    end = chrono::system_clock::now();
+    double elapsed = chrono::duration_cast<chrono::milliseconds>(end-start).count();
+    cout << "処理時間 : " << elapsed << "ms" << endl;
+
+    // load_env_time
+    double elapsed_load_env = chrono::duration_cast<chrono::milliseconds>(load_env_end-load_env_start).count();
+    cout << "load_env処理時間 : " << elapsed_load_env << "ms" << endl;
+    // ltl_input_time
+    double elapsed_ltl_input = chrono::duration_cast<chrono::milliseconds>(ltl_input_end-ltl_input_start).count();
+    cout << "ltl_input処理時間 : " << elapsed_ltl_input << "ms" << endl;
+    // to_aut_time
+    double elapsed_to_aut = chrono::duration_cast<chrono::milliseconds>(to_aut_end-to_aut_start).count();
+    cout << "to_aut処理時間 : " << elapsed_to_aut << "ms" << endl;
+    // injection_time
+    double elapsed_injection = chrono::duration_cast<chrono::milliseconds>(injection_end-injection_start).count();
+    cout << "injection処理時間 : " << elapsed_injection << "ms" << endl;
+    // goal_time
+    double elapsed_goal = chrono::duration_cast<chrono::milliseconds>(goal_end-goal_start).count();
+    cout << "goal処理時間 : " << elapsed_goal << "ms" << endl;
+    // mscc_time
+    double elapsed_mscc = chrono::duration_cast<chrono::milliseconds>(mscc_end-mscc_start).count();
+    cout << "mscc処理時間 : " << elapsed_mscc << "ms" << endl;
+    // output_time
+    double elapsed_output = chrono::duration_cast<chrono::milliseconds>(output_end-output_start).count();
+    cout << "output処理時間 : " << elapsed_output << "ms" << endl;
+    // exclude_time
+    double elapsed_exclude = chrono::duration_cast<chrono::milliseconds>(exclude_end-exclude_start).count();
+    cout << "exclude処理時間 : " << elapsed_exclude << "ms" << endl;
 
     return 0;
 }

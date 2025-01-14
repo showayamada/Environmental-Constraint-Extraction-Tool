@@ -26,3 +26,8 @@ tasks:
     cmds:
       - docker compose run -it --rm cmake bash -c "find /root/rse/build -type f | xargs rm -f && rm -rf /root/rse/build/CMakeFiles && touch /root/rse/build/.gitkeep"
       - echo 'cleaned'
+
+  change:
+    desc: change the complement algorithm (default modifiedsafra)
+    cmds:
+      - docker compose run -it --rm cmake bash -c "cd /root/rse/src && sed -i 's/complement -m [a-zA-Z0-9_-]*/complement -m {{.CLI_ARGS}}/' script.sh"
