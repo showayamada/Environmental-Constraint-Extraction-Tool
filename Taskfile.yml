@@ -14,7 +14,7 @@ tasks:
     cmds: 
       - cp .env.example .env
       - docker compose build
-      - docker compose run -it --rm cmake bash -c "cd /root/rse/goal && unzip -o GOAL-20200506-with-API.zip"
+      - docker compose run -it --rm cmake bash -c "cd /root/rse/goal && unzip -o GOAL-20200506-with-API.zip && java -XX:MaxHeapSize=8G -XX:MaxRAM=8G -version"
   
   run:
     desc: "Run the project. The first parameter is the LTL formula, and the second and subsequent parameters are response events."

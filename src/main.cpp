@@ -82,8 +82,8 @@ int main (int argc, char *argv[])
     string ltl_formula_str;
     vector<string> responseEvents;
     if (1 == argc) {
-        ltl_formula_str = "((G(open -> F ! open)) &&(G (close -> F ! close)) &&(G (openext -> F ! openext))) ->((G (open -> F door)) &&(G (close -> ! door)) &&(G((openext && door) -> ((door U close) || (G door)))) &&((F G ! open) -> (F G !door)))";
-        responseEvents = {"door"};
+        cout << "You must input LTL." << endl;
+        exit(1);
     } else {
         ltl_formula_str = argv[1];
         for (int i = 2; i < argc; i++) {
@@ -135,7 +135,7 @@ int main (int argc, char *argv[])
     // print_dot(cout, automaton);
     chrono::system_clock::time_point injection_end = chrono::system_clock::now();
 
-    automaton->prop_universal(false);
+    //automaton->prop_universal(false);
 
     // ファイルに出力する
     ofstream ofs("automaton.hoa");
@@ -234,11 +234,11 @@ int main (int argc, char *argv[])
     string result_formula = "";
     for (size_t i = 0; i < result_list.size(); i++) {
         cout <<"GF("<< bdd_format_formula(complemented->aut->get_dict(), result_list[i])<<")" << endl;
-        if (i != formula_list.size() - 1) {
+        if (i < formula_list.size() - 1) {
             cout << " && " << endl;
         }
-        
     }
+    cout << "count : " << result_list.size() << endl;
 
     chrono::system_clock::time_point exclude_end = chrono::system_clock::now();
 
